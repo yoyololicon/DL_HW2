@@ -13,7 +13,7 @@ valid_encode = np.array([vocab_to_int[c] for c in text], dtype=np.int32)
 
 batch_size = 32
 num_steps = 100
-num_hidden = [8, 16, 16, 8]
+num_hidden = [128, 128]
 num_class = len(vocab)
 learning_rate = 0.1
 epochs = 20
@@ -95,6 +95,7 @@ def main(_):
         plt.legend()
         plt.show()
 
+
         # predict 100 words
         for x, y in get_batches(train_encode, 1, num_steps):
             seed_encode = x[0]
@@ -102,13 +103,18 @@ def main(_):
         seed = [int_to_vocab[c] for c in seed_encode]
         seed = ''.join(seed)
         current_states = tuple(np.zeros((1, n)) for n in num_hidden)
-        for i in range(1000):
+        for i in range(10):
             if i > 0:
-                seed_encode = np.append(seed_encode[1:], predicted[0, -1])
-            predicted, _ = sess.run([predicts, final_states],
+                seed_encode = np.append(last, np.zeros(num_steps - 1))
+                for j in range(num_steps-1):
+                    predicted = sess.run(predicts, feed_dict={X: seed_encode[None, :], init_states: current_states})
+                    seed_encode[j+1] = predicted[0, j]
+                    seed += int_to_vocab[predicted[0, j]]
+            print(seed_encode)
+            predicted, current_states = sess.run([predicts, final_states],
                                                  feed_dict={X: seed_encode[None, :], init_states: current_states})
-
-            seed += int_to_vocab[predicted[0, -1]]
+            last = predicted[0, -1]
+            seed += int_to_vocab[last]
         print(seed)
 
 
