@@ -109,11 +109,25 @@ def resnet18_plain_simple(features, num_class, regularizer):
         logits = tf.layers.dense(inputs=average, units=num_class, kernel_regularizer=regularizer)
         return logits
 
+def get_rnn_cells(num_hidden, prob=1.0):
+    cells = [tf.contrib.rnn.BasicRNNCell(n) for n in num_hidden]
+    dropcells = [tf.contrib.rnn.DropoutWrapper(c, input_keep_prob=prob) for c in cells]
+    stacked_cells = tf.contrib.rnn.MultiRNNCell(dropcells)
+    stacked_cells = tf.contrib.rnn.DropoutWrapper(stacked_cells, output_keep_prob=prob)
+    return stacked_cells
 
-def rnn(features, num_hidden, num_class, init_states):
+def get_lstm_cells(num_hidden, prob=1.0):
+    cells = [tf.contrib.rnn.BasicLSTMCell(n) for n in num_hidden]
+    dropcells = [tf.contrib.rnn.DropoutWrapper(c, input_keep_prob=prob) for c in cells]
+    stacked_cells = tf.contrib.rnn.MultiRNNCell(dropcells)
+    stacked_cells = tf.contrib.rnn.DropoutWrapper(stacked_cells, output_keep_prob=prob)
+    return stacked_cells
+
+def rnn(features, cells, last_hidden, num_steps, num_class, init_states):
     with tf.variable_scope('myrnn'):
-        cells = [tf.contrib.rnn.BasicRNNCell(n) for n in num_hidden]
-        stacked_rnn_cell = tf.contrib.rnn.MultiRNNCell(cells, state_is_tuple=True)
-        rnn_outputs, final_states = tf.nn.dynamic_rnn(stacked_rnn_cell, features, initial_state=init_states)
-        logits = tf.layers.dense(inputs=rnn_outputs, units=num_class)
+        rnn_outputs, final_states = tf.nn.dynamic_rnn(cells, features, initial_state=init_states,
+                                                      dtype=tf.float32)
+        tmp = tf.reshape(rnn_outputs, [-1, last_hidden])
+        reshape_logits = tf.layers.dense(inputs=tmp, units=num_class)
+        logits = tf.reshape(reshape_logits, [-1, num_steps, num_class])
         return logits, final_states
