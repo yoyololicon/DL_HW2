@@ -9,8 +9,8 @@ from model import rnn, get_rnn_cells, get_lstm_cells
 import matplotlib.pyplot as plt
 from datetime import datetime
 
-config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.1
+#config = tf.ConfigProto()
+#config.gpu_options.per_process_gpu_memory_fraction = 0.1
 
 seq = np.array(['N', 'C', 'T', 'U', ' ', 'i', 's', ' ', 'g', 'o', 'o', 'd'])
 
@@ -38,7 +38,7 @@ labels = tf.one_hot(Y, num_class)
 
 def main(_):
     with tf.Session() as sess:
-        cells = get_lstm_cells(num_hidden, keep_prob)
+        cells = get_rnn_cells(num_hidden, keep_prob)
         init_states = cells.zero_state(batch_size, tf.float32)
 
         outputs, final_states = rnn(rnn_inputs, cells, num_hidden[-1], num_steps, num_class, init_states)

@@ -28,6 +28,7 @@ Be aware to specified the meta files directory.
 Use [feature_map.py](feature_map.py) to compute the model confusion matrix evaluated on evaluation data, 
 display some recognition results and hidden features of each layer.
 
+![](images/confusion%20matrix.png)
 ![](images/correct1.png)
 ![](images/correct1_conv1.png)
 ![](images/false1.png)

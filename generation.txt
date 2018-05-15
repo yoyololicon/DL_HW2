@@ -1,0 +1,15 @@
+LSTM:
+
+Asukallen and the strong of the sease,
+That they are so the strong of the court shall be thee,
+The strong of the senter of the sealth of thee,
+The strong of the senter of the sealth of thee,
+The strenger of the sease of the court shall be thee,
+The strenger of the sease of the court shall be thee,
+The strenger of the sease of the court shall be thee,
+The strenger of the sease of the court shall be thee,
+The strenger of the sease of the court shall be thee,
+The strenger of the sease of the court shall
+
+RNN:
+Asukand the sonse and so man the songe and the sonse and so man the songe and the sonse and so man the songe and the sonse and so man the songe and the sonse and so man the songe and the sonse and so man the songe and the sonse and so man the songe and the sonse and so man the songe and the sonse and so man the songe and the sonse and so man the songe and the sonse and so man the songe and the sonse and so man the songe and the sonse and so man the songe and the sonse and so man the songe and the son
