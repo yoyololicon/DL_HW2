@@ -19,13 +19,13 @@ with open(valid_URL, 'r') as f:
     text = f.read()
 valid_encode = np.array([vocab_to_int[c] for c in text], dtype=np.int32)
 
-batch_size = tf.placeholder(tf.int32, shape=(1,))
-drop_prob = tf.placeholder_with_default(1.0, shape=())
-num_steps = 50
-num_hidden = [128, 128, 128]
+batch_size = tf.placeholder(tf.int32, shape=())
+keep_prob = tf.placeholder_with_default(1.0, shape=())
+num_steps = 100
+num_hidden = [256, 256]
 num_class = len(vocab)
-learning_rate = 0.001
-epochs = 20
+learning_rate = 0.1
+epochs = 40
 
 X = tf.placeholder(tf.int32, [None, num_steps], name='input_X')
 Y = tf.placeholder(tf.int32, [None, num_steps], name='labels_Y')
@@ -38,7 +38,7 @@ labels = tf.one_hot(Y, num_class)
 
 def main(_):
     with tf.Session() as sess:
-        cells = get_lstm_cells(num_hidden, drop_prob)
+        cells = get_lstm_cells(num_hidden, keep_prob)
         init_states = cells.zero_state(batch_size, tf.float32)
 
         outputs, final_states = rnn(rnn_inputs, cells, num_hidden[-1], num_steps, num_class, init_states)
@@ -66,18 +66,18 @@ def main(_):
         print('Start training ...')
         loss_history = []
         acc_history = []
-        batch_num = 10
+        batch_num = 30
         a = datetime.now().replace(microsecond=0)
 
         for i in range(epochs):
             total_loss = 0
             total_acc = 0
             count = 0
-            current_states = sess.run(init_states, feed_dict={batch_size: [batch_num]})
+            current_states = sess.run(init_states, feed_dict={batch_size: batch_num})
             for x, y in get_batches(train_encode, batch_num, num_steps):
                 _, loss_value, acc_value, current_states = sess.run([train_op, loss_tensor, acc_op, final_states],
                                                                     feed_dict={X: x, Y: y, init_states: current_states,
-                                                                               drop_prob: 0.8})
+                                                                               keep_prob: 0.8})
                 total_loss += loss_value
                 total_acc += acc_value
                 count += 1
@@ -86,7 +86,7 @@ def main(_):
 
             valid_acc = 0
             count = 0
-            current_states = sess.run(init_states, feed_dict={batch_size: [batch_num]})
+            current_states = sess.run(init_states, feed_dict={batch_size: batch_num})
             for x, y in get_batches(valid_encode, batch_num, num_steps):
                 acc_value, current_states = sess.run([acc_op, final_states],
                                                      feed_dict={X: x, Y: y, init_states: current_states})
@@ -117,12 +117,12 @@ def main(_):
         plt.savefig("Training error.png", dpi=100)
 
         # predict 100 words
-        seed = 'ROMEO'
+        seed = 'Asuka'
         seed_encode = np.array([vocab_to_int[c] for c in list(seed)])
         seed_encode = np.concatenate((seed_encode, np.zeros(num_steps - 5)))
-        current_states = sess.run(init_states, feed_dict={batch_size: [1]})
+        current_states = sess.run(init_states, feed_dict={batch_size: 1})
         index = 4
-        for i in range(400):
+        for i in range(500):
             if index == num_steps - 1:
                 predicted, current_states = sess.run([predicts, final_states],
                                                      feed_dict={X: seed_encode[None, :], init_states: current_states})
