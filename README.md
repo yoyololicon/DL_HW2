@@ -40,8 +40,8 @@ In this task I construct a 2-layer RNN as character-level language model,
 and trained it on [The Complete Works of William Shakespeare](http://shakespeare.mit.edu/works.html).
 After training, it will generate training curve and training error as usual, and some random generated words with starting text _Asuka_.
 
-![](images/lstm_Training%20curve.png)
-![](images/lstm_Training%20error.png)
+![](images/rnn_Training%20curve.png)
+![](images/rnn_Training%20error.png)
 
 ```
 Start training ...
