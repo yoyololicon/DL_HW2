@@ -21,11 +21,12 @@ valid_encode = np.array([vocab_to_int[c] for c in text], dtype=np.int32)
 
 batch_size = tf.placeholder(tf.int32, shape=())
 keep_prob = tf.placeholder_with_default(1.0, shape=())
-num_steps = 100
-num_hidden = [256, 256]
+num_steps = 50
+num_hidden = [256, 128]
 num_class = len(vocab)
 learning_rate = 0.1
-epochs = 40
+epochs = 30
+k = 2
 
 X = tf.placeholder(tf.int32, [None, num_steps], name='input_X')
 Y = tf.placeholder(tf.int32, [None, num_steps], name='labels_Y')
@@ -38,20 +39,22 @@ labels = tf.one_hot(Y, num_class)
 
 def main(_):
     with tf.Session() as sess:
-        cells = get_rnn_cells(num_hidden, keep_prob)
+        cells = get_lstm_cells(num_hidden, keep_prob)
         init_states = cells.zero_state(batch_size, tf.float32)
 
         outputs, final_states = rnn(rnn_inputs, cells, num_hidden[-1], num_steps, num_class, init_states)
 
         predicts = tf.argmax(outputs, -1, name='predict_op')
+        softmax_out = tf.nn.softmax(outputs, name='softmax_op')
+        top_k = tf.nn.top_k(softmax_out, k=k, sorted=False, name='top_k_op')
         with tf.variable_scope('train'):
-            loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=outputs),
+            loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels, logits=outputs),
                                   name='loss_op')
 
             global_step = tf.Variable(0, name='global_step', trainable=False,
                                       collections=[tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.GLOBAL_STEP])
 
-            optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=0.8)
+            optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=0.9)
             train_op = optimizer.minimize(loss, global_step=global_step, name='train_op')
 
             arg_labels = tf.argmax(labels, -1)
@@ -77,7 +80,7 @@ def main(_):
             for x, y in get_batches(train_encode, batch_num, num_steps):
                 _, loss_value, acc_value, current_states = sess.run([train_op, loss_tensor, acc_op, final_states],
                                                                     feed_dict={X: x, Y: y, init_states: current_states,
-                                                                               keep_prob: 0.8})
+                                                                               keep_prob: 1})
                 total_loss += loss_value
                 total_acc += acc_value
                 count += 1
@@ -116,7 +119,7 @@ def main(_):
         plt.legend()
         plt.savefig("Training error.png", dpi=100)
 
-        # predict 100 words
+        # predict 500 words
         seed = 'Asuka'
         seed_encode = np.array([vocab_to_int[c] for c in list(seed)])
         seed_encode = np.concatenate((seed_encode, np.zeros(num_steps - 5)))
@@ -124,14 +127,20 @@ def main(_):
         index = 4
         for i in range(500):
             if index == num_steps - 1:
-                predicted, current_states = sess.run([predicts, final_states],
-                                                     feed_dict={X: seed_encode[None, :], init_states: current_states})
-                seed_encode = np.append(predicted[0, -1], np.zeros(num_steps - 1))
+                candidates, current_states = sess.run([top_k, final_states],
+                                                     feed_dict={X: seed_encode[None, :], init_states: current_states})    
+                p = candidates.values[0, index]
+                p /= p.sum()
+                rand_idx = np.random.choice(k, p=p)
+                seed_encode = np.append(candidates.indices[0, index, rand_idx], np.zeros(num_steps - 1))
             else:
-                predicted = sess.run(predicts, feed_dict={X: seed_encode[None, :], init_states: current_states})
-                seed_encode[index + 1] = predicted[0, index]
+                candidates = sess.run(top_k, feed_dict={X: seed_encode[None, :], init_states: current_states})
+                p = candidates.values[0, index]
+                p /= p.sum()
+                rand_idx = np.random.choice(k, p=p)
+                seed_encode[index + 1] = candidates.indices[0, index, rand_idx]
 
-            seed += int_to_vocab[predicted[0, index]]
+            seed += int_to_vocab[candidates.indices[0, index, rand_idx]]
             index = (index + 1) % num_steps
         print(seed)
         b = datetime.now().replace(microsecond=0)
